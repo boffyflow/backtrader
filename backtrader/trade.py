@@ -156,7 +156,7 @@ class Trade(object):
         )
 
     def __init__(self, data=None, tradeid=0, historyon=False,
-                 size=0, price=0.0, value=0.0, commission=0.0):
+                 size=0, price=0.0, value=0.0, commission=0.0, R=None):  # ROR added
 
         self.ref = next(self.refbasis)
         self.data = data
@@ -165,6 +165,7 @@ class Trade(object):
         self.price = price
         self.value = value
         self.commission = commission
+        self.R = R  # ROR added
 
         self.pnl = 0.0
         self.pnlcomm = 0.0
@@ -287,6 +288,30 @@ class Trade(object):
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
             pnl = comminfo.profitandloss(-size, self.price, price)
+
+            if self.R != None:  # ROR .. all this code below
+                # NOTE: self.price = inital entry price         # ROR
+                # NOTE: price = exit price                      # ROR
+                if -size < 0:  # If a sell signal that initiated position..  # ROR
+                    risk = self.R - self.price                  # ROR
+                else:                                           # ROR
+                    risk = self.price - self.R                  # ROR
+                print('Price = %f,  R = %f,  Risk = %f  ' % (self.price, self.R, risk))  # ROR
+
+                try:
+                    pnl = pnl/risk                                  # ROR
+                except ZeroDivisionError:
+                    print(('\n'+'*'*50)*3)
+                    print('DIVISION BY ZERO ERROR   ---using-->   R-Multiple')
+                    print('** Entry price = ', self.price)
+                    print('** R Stop = ', self.R)
+                    print('** Risk = ', risk)
+                    print(('*'*50+'\n')*3)
+                    print('** Order = ', order)
+                    print(('*'*50+'\n')*3)
+                    raise Exception('Division by Zero with R-Multiple.' +
+                                    ' Scroll up for parameter output.')
+
 
             self.pnl += pnl
             self.pnlcomm = self.pnl - self.commission
